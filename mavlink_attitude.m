@@ -1,52 +1,60 @@
-clear % clear up remaining receiver
+clear; close all;% clear up remaining receiver
 dialect = mavlinkdialect("mavlink/message_definitions/common.xml");
 
 mavlink_forward_port = 14445; % default port forwarding from ground station
-window = 1000;
+window_size = 10000;
 
-x_axis = 1:1:window;
-yaw_vector = nan(1, window);
-pitch_vector = nan(1, window);
-roll_vector = nan(1, window);
+x_axis = 1:1:window_size;
+yaw_vector = nan(1, window_size);
+pitch_vector = nan(1, window_size);
+roll_vector = nan(1, window_size);
 mavlink_receiver = mavlinkio(dialect);
 mavlink_client = mavlinkclient(mavlink_receiver, 1, 1);
 connect(mavlink_receiver, "UDP", "LocalPort", mavlink_forward_port);
 
 attitude_sub = mavlinksub(mavlink_receiver, mavlink_client, "ATTITUDE");
-figure;
-yaw_plot = plot(x_axis, yaw_vector);
-ylim([-1, 1]);
+figure('Name', "YPR");
+subplot(3,1,1);
+yaw_plot = plot(x_axis, yaw_vector, 'r', 'LineWidth', 2);
+title('Yaw');
+subplot(3,1,2);
+pitch_plot = plot(x_axis, pitch_vector, 'g', 'LineWidth', 2);
+title('Pitch')
+subplot(3,1,3);
+title('Roll')
+roll_plot = plot(x_axis, roll_vector, 'b', 'LineWidth', 2);
 
-num_messages = 0;
-
+%%ylim([-1, 1]);
+hold off
+number_of_messages_since_print = 0;
+print_after_how_many_messages = 50;
 
 while true
     % read message from attitude subscription
     message = latestmsgs(attitude_sub, 1);
     is_message_empty = isempty(message);
-
+    % payload =  0;
     % if the message is not empty add it to the circular buffer
     if ~is_message_empty
         payload = message.Payload;
 
         % this is how we create a "circular" buffer
         yaw_vector = [yaw_vector(2:end), payload.yaw];
+        pitch_vector = [pitch_vector(2:end), payload.pitch];
+        roll_vector = [roll_vector(2:end), payload.roll];
         % yaw_vector(vector_index) = payload.yaw;
-        num_messages = num_messages + 1;
+        number_of_messages_since_print = number_of_messages_since_print + 1;
     end
-
+    
     % update the plot
-    if num_messages > 9 || is_message_empty
-        num_messages = 0; % reset num_messages
-                          % this should really be like messages since
-                          % print
+    if is_message_empty || number_of_messages_since_print > print_after_how_many_messages
+        number_of_messages_since_print = 0;
         
-        % Where I'm lost.
-        % How do we actually update the plots in real time?
-        % Are we constrained somehow?
+        % disp(payload);
         set(yaw_plot, 'YData', yaw_vector);
+        set(pitch_plot, 'YData', pitch_vector);
+        set(roll_plot, 'YData', roll_vector);
         drawnow;
-        pause(0.05);
         
     end
 end
