@@ -1,3 +1,3 @@
-[submodule "mavlink_2.0"]
-    path = mavlink
-    url = https://github.com/mavlink/mavlink.git
+[submodule "mavlink"]
+	path = mavlink
+	url = git@github.com:mavlink/mavlink.git
