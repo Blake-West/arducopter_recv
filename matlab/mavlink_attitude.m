@@ -1,6 +1,6 @@
 clear; close all;% clear up remaining receiver
 dialect = mavlinkdialect("mavlink/message_definitions/common.xml");
-
+save_attitude_as_csv = true;
 mavlink_forward_port = 14445; % default port forwarding from ground station
 window_size = 10000;
 
@@ -29,6 +29,10 @@ hold off
 number_of_messages_since_print = 0;
 print_after_how_many_messages = 50;
 
+if save_attitude_as_csv
+    f = fopen("attitude.csv", "w");
+    fprintf(f,  'time_boot_ms, yaw, pitch, roll, yaw_rate, pitch_rate, roll_rate \n');
+end
 while true
     % read message from attitude subscription
     message = latestmsgs(attitude_sub, 1);
@@ -44,6 +48,11 @@ while true
         roll_vector = [roll_vector(2:end), payload.roll];
         % yaw_vector(vector_index) = payload.yaw;
         number_of_messages_since_print = number_of_messages_since_print + 1;
+        if save_attitude_as_csv
+            fprintf(f, '%d, %.16f, %.16f, %.16f, %.16f, %.16f, %.16f', payload.time_boot_ms, payload.yaw, payload.pitch, ...
+                payload.yawspeed, payload.pitchspeed, payload.rollspeed);
+            fprintf(f, '\n');
+        end
     end
     
     % update the plot
@@ -57,4 +66,7 @@ while true
         drawnow;
         
     end
+end
+if save_attitude_as_csv 
+    fclose(f);
 end
