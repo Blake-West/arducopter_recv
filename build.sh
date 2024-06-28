@@ -1,2 +1,7 @@
-
-cmake -Bbld -H. -DCMAKE_PREFIX_PATH=./mavlink/install
+OLDDIR=$OLDPWD
+if [ ! -d bld ]; then 
+    cmake -Bbld -H. 
+fi 
+cd bld
+make install
+cd $OLDDIR
